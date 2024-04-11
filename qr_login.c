@@ -17,7 +17,7 @@ EVP_PKEY *evp_keypair = NULL;
 char *base64_encoded_public_key = NULL;
 int received_hello = 0;
 int heartbeat_interval = 0;
-volatile int still_run_ws = 1;
+int still_run_ws = 1;
 
 struct memory {
   char *response;
@@ -437,9 +437,16 @@ int main()
     return 1;
   }
 
+  do {
+    printf("Waiting for a hello...\n");
+  } while(!received_hello); // Block the execution
+
+  int sleepFor = heartbeat_interval / 1000;
+
   while (1) {
-    if(received_hello && still_run_ws) {
-      usleep(heartbeat_interval * 100);
+    if(still_run_ws) {
+      printf("%d\n", sleepFor);
+      sleep(sleepFor);
       char send_json_str[256];
       sprintf(send_json_str, "{\"op\":\"heartbeat\"}");
       printf("Sent %s\n", send_json_str);
