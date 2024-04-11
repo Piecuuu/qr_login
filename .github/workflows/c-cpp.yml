@@ -13,5 +13,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - name: Install dependencies
+      run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebsockets-dev
+          sudo apt-get install -y libcurl-dev
+          sudo apt-get install -y libssl-dev
+          sudo apt-get install -y libcjson-dev
     - name: make
       run: make
