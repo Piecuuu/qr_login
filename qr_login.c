@@ -337,6 +337,7 @@ static int callback(struct lws *wsi, enum lws_callback_reasons reason, void *use
               free(chunk.response);
               curl_easy_cleanup(curl);
               curl_slist_free_all(list);
+              cJSON_Delete(json);
               printf("Bye!\n");
               exit(0);
             }
@@ -436,7 +437,7 @@ int main()
   }
 
   do {
-    asm(""); // Don't optimise out
+    asm("nop"); // Don't optimise out
   } while(!received_hello); // Block the execution
 
   int sleepFor = heartbeat_interval / 1000;
