@@ -12,6 +12,7 @@
 #include <openssl/rand.h>
 #include <string.h>
 #include <curl/curl.h>
+#include <pthread.h>
 
 EVP_PKEY *evp_keypair = NULL;
 char *base64_encoded_public_key = NULL;
@@ -142,7 +143,7 @@ int generate_and_export_key_pair()
   EVP_PKEY_CTX *ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, NULL);
   BIGNUM *e = BN_new();
 
-  if (!ctx || !e || EVP_PKEY_keygen_init(ctx) <= 0 ||
+  if(!ctx || !e || EVP_PKEY_keygen_init(ctx) <= 0 ||
     EVP_PKEY_CTX_set_rsa_keygen_bits(ctx, 2048) <= 0 ||
     BN_set_word(e, RSA_F4) <= 0 ||
     EVP_PKEY_CTX_set1_rsa_keygen_pubexp(ctx, e) <= 0 ||
@@ -202,7 +203,7 @@ int compute_sha256_hash(const unsigned char *data, size_t data_length, char *has
 }
 void remove_newline(char *str) {
   size_t len = strlen(str);
-  if (len > 0 && str[len - 1] == '\n') {
+  if(len > 0 && str[len - 1] == '\n') {
     str[len - 1] = '\0';  // Replace '\n' with '\0'
   }
 }
@@ -382,8 +383,7 @@ static struct lws_protocols protocols[] =
 int main()
 {
   OPENSSL_init_crypto(OPENSSL_INIT_ADD_ALL_CIPHERS | OPENSSL_INIT_ADD_ALL_DIGESTS, NULL);
-  if (generate_and_export_key_pair() != 0)
-  {
+  if(generate_and_export_key_pair() != 0) {
     fprintf(stderr, "Failed to generate and export RSA key pair\n");
     return -1;
   }
@@ -405,8 +405,7 @@ int main()
   info.client_ssl_ca_filepath = "/etc/ssl/certs/ca-certificates.crt";
 
   struct lws_context *context = lws_create_context(&info);
-  if (!context)
-  {
+  if(!context) {
     fprintf(stderr, "Failed to create libwebsockets context\n");
     return -1;
   }
@@ -424,28 +423,26 @@ int main()
   // lws_set_log_level(LLL_DEBUG, NULL);
   wsi = lws_client_connect_via_info(&connect_info);
 
-  if (!wsi)
-  {
+  if(!wsi) {
     fprintf(stderr, "Failed to connect to server\n");
     lws_context_destroy(context);
     return -1;
   }
 
   pthread_t lws_service_tid;
-  if (pthread_create(&lws_service_tid, NULL, lws_service_thread, (void *)context) != 0) {
+  if(pthread_create(&lws_service_tid, NULL, lws_service_thread, (void *)context) != 0) {
     perror("pthread_create lws_service");
     return 1;
   }
 
   do {
-    printf("Waiting for a hello...\n");
+    asm(""); // Don't optimise out
   } while(!received_hello); // Block the execution
 
   int sleepFor = heartbeat_interval / 1000;
 
-  while (1) {
+  while(1) {
     if(still_run_ws) {
-      printf("%d\n", sleepFor);
       sleep(sleepFor);
       char send_json_str[256];
       sprintf(send_json_str, "{\"op\":\"heartbeat\"}");
