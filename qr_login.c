@@ -15,7 +15,7 @@
 #include <pthread.h>
 
 EVP_PKEY *evp_keypair = NULL;
-char *base64_encoded_public_key = NULL;
+char base64_encoded_public_key[512];
 int received_hello = 0;
 int heartbeat_interval = 0;
 int still_run_ws = 1;
@@ -69,7 +69,7 @@ char *base64_encode(const unsigned char *data, size_t input_length) {
   return buffer;
 }
 
-static void base64_decode(const char* in, size_t in_len, unsigned char** out, size_t* out_len) {
+void base64_decode(const char* in, size_t in_len, unsigned char** out, size_t* out_len) {
   BIO *buff, *b64f;
 
   b64f = BIO_new(BIO_f_base64());
@@ -137,8 +137,7 @@ void remove_newlines_and_spaces(char *str) {
   *end = '\0';
 }
 
-int generate_and_export_key_pair()
-{
+int generate_and_export_key_pair() {
   RAND_poll();
   EVP_PKEY_CTX *ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, NULL);
   BIGNUM *e = BN_new();
@@ -182,7 +181,8 @@ int generate_and_export_key_pair()
 
   // memcpy(base64_encoded_public_key, buffer, der_len + 1);
   remove_newlines_and_spaces(buffer);
-  base64_encoded_public_key = buffer;
+  //base64_encoded_public_key = buffer;
+  memcpy(base64_encoded_public_key, buffer, der_len);
   BIO_free(bio_out);
   BN_free(e);
   EVP_PKEY_CTX_free(ctx);
@@ -279,7 +279,8 @@ static int callback(struct lws *wsi, enum lws_callback_reasons reason, void *use
               if(rsa_decrypt(encrypted_nonce, encrypted_length, &decrypted_data, &decrypted_length) == 0) {
                 char *hash = malloc(SHA256_DIGEST_LENGTH);
                 if(compute_sha256_hash(decrypted_data, decrypted_length, hash) == 0) {
-                  char* proof = base64_url_safe(hash, strlen(hash));
+                  char* proof = base64_url_safe(hash, SHA256_DIGEST_LENGTH);
+                  //printf("%d, %d\n", strlen(hash), SHA256_DIGEST_LENGTH);
                   proof[strlen(proof)-1] = '\0';
                   char send_json_str[1024];
                   sprintf(send_json_str, "{\"op\":\"nonce_proof\",\"proof\":\"%s\"}", proof);
