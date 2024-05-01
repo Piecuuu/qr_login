@@ -21,4 +21,4 @@ jobs:
           sudo apt-get install -y libssl-dev
           sudo apt-get install -y libcjson-dev
     - name: make
-      run: make
+      run: make release
