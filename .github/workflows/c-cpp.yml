@@ -22,3 +22,7 @@ jobs:
           sudo apt-get install -y libcjson-dev
     - name: make
       run: make release
+      
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v4.3.3
+            
